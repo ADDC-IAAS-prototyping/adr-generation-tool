@@ -1,0 +1,21 @@
+# REDIS QUOTA
+kind: handler
+metadata:
+  name: redishandler
+  namespace: istio-system
+spec:
+  compiledAdapter: redisquota
+  params:
+    redisServerUrl: redis-release-master:6379 #string
+    connectionPoolSize: number
+    quotas:
+    - name: requestcountquota.instance.istio-system
+      maxAmount: number
+      validDuration: number + "s"
+      bucketDuration: number + "ms"
+      rateLimitAlgorithm: # (ROLLING_WINDOW | FIXED_WINDOW)
+      overrides: # list / optional
+      - dimensions:
+          destination: string
+          source: string # optional
+          maxAmount: number
