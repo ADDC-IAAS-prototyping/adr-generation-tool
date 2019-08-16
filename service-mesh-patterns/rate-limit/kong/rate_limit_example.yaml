@@ -1,0 +1,24 @@
+# Minimal rate limiting plugin for kong
+# Add this section to your declarative configuration file
+plugins:
+  name: rate-limiting
+  consumer: service-page
+  #route: {route_id | route_name}            # either service or route
+  config: 
+    second: 10                          # semi-optional
+    minute: 100                          # semi-optional
+    #hour: number                            # semi-optional
+    #day: number                             # semi-optional
+    #month: number                           # semi-optional
+    #year: number                            # semi-optional
+    #limit_by: {consumer | credential | ip}  # optional
+    limit_by: ip  # optional
+    policy:  {local | cluster | redis}      # optional
+    fault_tolerant: false                 # optional
+    #hide_client_headers: boolean            # optional
+    #redis_host: string                      # semi-optional
+                                            # -> mandatory if redis policy chosen
+    #redis_port: {number | 6379}             # optional
+    #redis_password: string                  # optional
+    #redis_timeout: {number | 2000}          # optional
+    #redis_database: {default: 0}            # optional
