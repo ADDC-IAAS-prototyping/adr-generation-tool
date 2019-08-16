@@ -1,0 +1,18 @@
+# MEMQUOTA HANDLER
+kind: handler
+metadata:
+  name: quotahandler # name of the handler
+  namespace: istio-system # desired namespace
+spec:
+  compiledAdapter: memquota
+  params:
+    quotas: # USES SLIDING WINDOW
+    - name: requestcountquota.instance.istio-system
+    maxAmount: number
+    validDuration: number + "s"
+    overrides: # list / optional
+    - dimensions:
+        destination: string
+        source: string # optional
+      maxAmount: number
+      validDuration: number + "s"
