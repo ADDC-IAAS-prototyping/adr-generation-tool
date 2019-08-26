@@ -1,5 +1,5 @@
 import click
-import kong.parser as parsing
+import rate_limit.kong.parser as parsing
 
 def cli(config_file):
     """Start command line argument request and pass the resulting values to the parser initialization.
