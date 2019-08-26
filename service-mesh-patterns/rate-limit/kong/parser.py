@@ -10,10 +10,10 @@ TOO_LOW = 'TOO FEW REQUESTS ALLOWED FOR INPUT INTERVAL'
 COMPLIANT = 'EVERYTHING IS FINE'
 
 class Parser(object):
-
     def __init__(self, config_interval, config_rate):
         self.config_interval = 0*ureg.minute + config_interval * ureg.second
         self.config_rate = config_rate
+
 
     def update_units(self, unit, highest_unit):
         """Will be called while iterating through the config object in a KONG plugin.
@@ -25,6 +25,7 @@ class Parser(object):
         highest_unit = unit
         return highest_unit, sub_unit
 
+
     def get_ureg_unit(self, unit_passed):
         """Returns a ureg unit type for a given key word that corresponds to a ureg type.
         """
@@ -33,11 +34,13 @@ class Parser(object):
                 return 1*getattr(ureg, unit)
         return None
     
+
     def convert_even_pint_measure_to_int(self, pint_measure):
         """Conversion of pint.UnitRegistry measurement types to ints.
         Should only be done with measures which are natural numbers (rounded floats)
         """
         return int(float(''.join(c for c in str(pint_measure) if c.isdigit() or c=='.')))
+
 
     def edge_cases_even(self, rate_highest_unit):
         """Edge cases if the user-defined CONFIG_INTERVAL can be divided without a rest wrt. the highest 
@@ -53,6 +56,7 @@ class Parser(object):
         else:
             return TOO_HIGH
         return ""
+
 
     def edge_cases_uneven(self, rest_time_in_highest_unit, rate_highest_unit, rate_sub_unit):
         """Edge cases if the user-defined CONFIG_INTERVAL cannot be divided without a rest wrt. the highest 
@@ -93,12 +97,12 @@ class Parser(object):
                 return returnString
         return 0
 
+
     def check_config(self, config_file):
         """Parse rate limit metrics from KONG plugin yaml and check if the configuration is compliant with 
         user-defined configuration checks (config_interval and CONFIG_RATE). For KONG this is particularly 
         complex because of its proprietary format for rate limit configurations.
         """
-
         target = ''
         source = ''
 
@@ -116,7 +120,6 @@ class Parser(object):
 
         highest_unit = ''
         sub_unit = ''
-
         # Iterate through the config object in order to check which format rate limits are set
         for unit in ['second', 'minute', 'hour', 'day', 'month', 'year']:
             if unit in config_file:
