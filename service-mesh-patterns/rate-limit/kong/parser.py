@@ -1,127 +1,91 @@
 #!/usr/bin/env python
 
-import yaml
 import pint
 
 # Create object for generation of pint measurements
 ureg = pint.UnitRegistry()
 
-# globals
-enteredInterval = 384 # will be user input
-CONFIG_INTERVAL = 0*ureg.minute + enteredInterval * ureg.second
-CONFIG_RATE = 61 # will be user input
-
 TOO_HIGH = 'TOO MANY REQUESTS ALLOWED FOR INPUT INTERVAL'
 TOO_LOW = 'TOO FEW REQUESTS ALLOWED FOR INPUT INTERVAL'
 COMPLIANT = 'EVERYTHING IS FINE'
 
-def convertEvenPintMeasureToInt(pintMeasure):
-    """ Conversion of pint.UnitRegistry measurement types to ints.
-    Should only be done with measures which are natural numbers (rounded floats)
-    """
-    return int(float(''.join(c for c in str(pintMeasure) if c.isdigit() or c=='.')))
+class Parser(object):
 
-def check_platform(yaml_file):
-    """ Simple check from which platform the parsed yaml file comes from
-    """
-    if hasattr(yaml_file, 'apiVersion'):
-        if 'istio' in yaml_file.apiVersion:
-            return 'istio'
-        elif hasattr(yaml_file, 'plugins'):
-            if hasattr(yaml_file.plugins, 'name'):
-                if 'rate-limiting' in yaml_file.plugins.name:
-                    return 'kong'
-        else:
-            return None
+    def __init__(self, config_interval, config_rate):
+        self.config_interval = 0*ureg.minute + config_interval * ureg.second
+        self.config_rate = config_rate
 
-def update_kong_units(unit, highestUnit):
-    """ Will be called while iterating through the config object in a KONG plugin.
-    Updates the highestUnit (year > month > day > hour > minute > second) and downs back the previous 
-    highest unit to be the second highest unit type (subUnit). This will be relevant if the rate limit 
-    interval is configured uneven wrt. highestUnit format (4500s = 1.25h).
-    """
-    subUnit = highestUnit
-    highestUnit = unit
-    return highestUnit, subUnit
+    def update_units(self, unit, highest_unit):
+        """Will be called while iterating through the config object in a KONG plugin.
+        Updates the highest_unit (year > month > day > hour > minute > second) and downs back the previous 
+        highest unit to be the second highest unit type (sub_unit). This will be relevant if the rate limit 
+        interval is configured uneven wrt. highest_unit format (4500s = 1.25h).
+        """
+        sub_unit = highest_unit
+        highest_unit = unit
+        return highest_unit, sub_unit
 
-def get_ureg_unit(passedUnit):
-    """ Returns a ureg unit type for a given key word that corresponds to a ureg type.
-    """
-    for unit in ['second', 'minute', 'hour', 'day', 'month', 'year']:
-        if unit == passedUnit:
-            return 1*getattr(ureg, unit)
-    return None
-
-def collect_kong_properties():
-    """ Parse rate limit metrics from KONG plugin yaml and check if the configuration is compliant with 
-    user-defined configuration checks (CONFIG_INTERVAL and CONFIG_RATE). For KONG this is particularly 
-    complex because of its proprietary format for rate limit configurations.
-    """
+    def get_ureg_unit(self, unit_passed):
+        """Returns a ureg unit type for a given key word that corresponds to a ureg type.
+        """
+        for unit in ['second', 'minute', 'hour', 'day', 'month', 'year']:
+            if unit == unit_passed:
+                return 1*getattr(ureg, unit)
+        return None
     
-    # Both variables can be filled out and combined to create something like 'source' overrides in Istio
-    target = "" # generic named variable for request target (service) 
-    source = "" # generic named variable for request source (consumer)
+    def convert_even_pint_measure_to_int(self, pint_measure):
+        """Conversion of pint.UnitRegistry measurement types to ints.
+        Should only be done with measures which are natural numbers (rounded floats)
+        """
+        return int(float(''.join(c for c in str(pint_measure) if c.isdigit() or c=='.')))
 
-    # get target id
-    if 'route' in yaml_file:
-        target = yaml_file['route']
-    if 'service' in yaml_file:
-        target = yaml_file['service']
+    def edge_cases_even(self, rate_highest_unit):
+        """Edge cases if the user-defined CONFIG_INTERVAL can be divided without a rest wrt. the highest 
+        time unit type in the KONG plugin config. For details see formula A1-A3.
+        """
+        config_interval_untyped = self.convert_even_pint_measure_to_int(self.config_interval)
+        rate_config_interval_kong = config_interval_untyped * rate_highest_unit
 
-    # get source id
-    if 'consumer' in yaml_file:
-        source = yaml_file['consumer']
+        if self.config_rate == rate_config_interval_kong:
+            return COMPLIANT
+        elif self.config_rate < rate_config_interval_kong:
+            return TOO_LOW
+        else:
+            return TOO_HIGH
+        return ""
 
-    # get intervals (in form of time units)
-    config = yaml_file['config']
-
-    subUnit = ""
-    highestUnit = ""
-
-    # Iterate through the config object in order to check which format rate limits are set
-    for unit in ['second', 'minute', 'hour', 'day', 'month', 'year']:
-        if unit in config:
-            highestUnit, subUnit = update_kong_units(unit, highestUnit)
-
-    # Get two highest rate limits
-    subUnitRate = config[subUnit] if subUnit != "" else 0
-    highestUnitRate = config[highestUnit] if highestUnit != "" else 0
-
-    highestUnit = get_ureg_unit(highestUnit)
-    rest_t_U = 0.0 if CONFIG_INTERVAL % highestUnit == 0 else CONFIG_INTERVAL % highestUnit # Formel B2.1
-
-    def edge_cases_uneven():
-        """ Edge cases if the user-defined CONFIG_INTERVAL cannot be divided without a rest wrt. the highest 
+    def edge_cases_uneven(self, rest_time_in_highest_unit, rate_highest_unit, rate_sub_unit):
+        """Edge cases if the user-defined CONFIG_INTERVAL cannot be divided without a rest wrt. the highest 
         time unit type in the KONG plugin config. For details see formula B1 and B2.1-B2.4.
         """
-        interval_down = CONFIG_INTERVAL - rest_t_U
+        interval_down = self.config_interval - rest_time_in_highest_unit
         interval_up = interval_down + 1*ureg.minute
 
-        interval_down_int = convertEvenPintMeasureToInt(interval_down)
-        interval_up_int = convertEvenPintMeasureToInt(interval_up)
+        interval_down_int = self.convert_even_pint_measure_to_int(interval_down)
+        interval_up_int = self.convert_even_pint_measure_to_int(interval_up)
 
-        kongInputIntervalRate = highestUnitRate * interval_up_int
+        kongInputIntervalRate = rate_highest_unit * interval_up_int
 
         print("--------------------------")
         print("interval up: " + str(interval_up))
         print("interval down: " + str(interval_down))
-        print("REST_t_U: " + str(rest_t_U))
+        print("rest_time_in_highest_unit: " + str(rest_time_in_highest_unit))
         print('kongInputIntervalRate: ' + str(kongInputIntervalRate))
-        print('highestUnitRate: ' + str(highestUnitRate))
+        print('highestUnitRate: ' + str(rate_highest_unit))
         print("--------------------------")
 
-        if kongInputIntervalRate < CONFIG_RATE:
+        if kongInputIntervalRate < self.config_rate:
             return TOO_LOW
         else:
-            rest_req = CONFIG_RATE - (interval_down_int * highestUnitRate)
+            rest_req = self.config_rate - (interval_down_int * rate_highest_unit)
             print("rest_req: " + str(rest_req))
-            rest_t_s = 0*ureg.second + rest_t_U
-            print('rest_t_s: ' + str(rest_t_s))
-            setpoint_kong_subunit_rate = rest_req / convertEvenPintMeasureToInt(rest_t_s)
+            rest_time_in_seconds = 0*ureg.second + rest_time_in_highest_unit
+            print('rest_time_in_seconds: ' + str(rest_time_in_seconds))
+            setpoint_kong_subunit_rate = rest_req / self.convert_even_pint_measure_to_int(rest_time_in_seconds)
             print("setpoint is: " + str(setpoint_kong_subunit_rate))
-            if subUnitRate == setpoint_kong_subunit_rate:
+            if rate_sub_unit == setpoint_kong_subunit_rate:
                 return COMPLIANT
-            elif subUnitRate < setpoint_kong_subunit_rate:
+            elif rate_sub_unit < setpoint_kong_subunit_rate:
                 returnString = TOO_LOW + '\n' + 'SUBUNIT RATE SHOULD BE ' + str(setpoint_kong_subunit_rate)
                 return returnString
             else:
@@ -129,28 +93,44 @@ def collect_kong_properties():
                 return returnString
         return 0
 
-    def edge_cases_even():
-        configIntervalUntyped = convertEvenPintMeasureToInt(CONFIG_INTERVAL) 
-        kongInputIntervalRate = configIntervalUntyped * highestUnitRate
+    def check_config(self, config_file):
+        """Parse rate limit metrics from KONG plugin yaml and check if the configuration is compliant with 
+        user-defined configuration checks (config_interval and CONFIG_RATE). For KONG this is particularly 
+        complex because of its proprietary format for rate limit configurations.
+        """
 
-        if CONFIG_RATE == kongInputIntervalRate:
-            return COMPLIANT
-        elif CONFIG_RATE < kongInputIntervalRate:
-            return TOO_LOW
+        target = ''
+        source = ''
+
+        # get target id
+        if 'route' in config_file:
+            target = config_file['route']
+        if 'service' in config_file:
+            target = config_file['service']
+
+        # get source id
+        if 'consumer' in config_file:
+            source = config_file['consumer']
+
+        config_file = config_file['config']
+
+        highest_unit = ''
+        sub_unit = ''
+
+        # Iterate through the config object in order to check which format rate limits are set
+        for unit in ['second', 'minute', 'hour', 'day', 'month', 'year']:
+            if unit in config_file:
+                highest_unit, sub_unit = self.update_units(unit, highest_unit)
+        
+        # Get two highest rate limits
+        rate_sub_unit = config_file[sub_unit] if sub_unit != "" else 0
+        rate_highest_unit = config_file[highest_unit] if highest_unit != "" else 0
+
+        highest_unit = self.get_ureg_unit(highest_unit)
+        rest_time_in_highest_unit = 0.0 if self.config_interval % highest_unit == 0 else self.config_interval % highest_unit # Formel B2.1
+
+        # Execute core functionality
+        if rest_time_in_highest_unit == 0:
+            return self.edge_cases_even(rate_highest_unit)
         else:
-            return TOO_HIGH
-        return ""
-
-    if rest_t_U == 0:
-        return edge_cases_even()
-    else:
-        return edge_cases_uneven()
-
-with open("rate_limit_example.yaml", "r") as stream:
-    try:
-        yaml_file = yaml.safe_load(open("rate_limit_example.yaml", "r"))["plugins"]
-    except yaml.YAMLError as exc:
-        print(exc)
-
-#print(check_platform(yaml_file))
-print(collect_kong_properties())
+            return self.edge_cases_uneven(rest_time_in_highest_unit, rate_highest_unit, rate_sub_unit)
