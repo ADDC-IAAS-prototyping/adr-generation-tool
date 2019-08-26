@@ -1,5 +1,5 @@
 import yaml
-import kong.cli as kong
+import rate_limit.kong.cli as kong
 
 class RateLimitConfigChecker(object):
     def __init__(self, config_file):
@@ -12,14 +12,3 @@ class RateLimitConfigChecker(object):
             return None # replace this with istio handler
         elif 'plugins' in self.config_file:
             kong.cli(self.config_file)
-
-
-# for testing
-with open("kong/sources/rate_limit_example.yaml", "r") as stream:
-    try:
-        yamlfile = yaml.safe_load(stream)
-        ratelimitchecker = RateLimitConfigChecker(yamlfile)
-        ratelimitchecker.check_config_provider()
-    except yaml.YAMLError as exc:
-        print(exc)
-
