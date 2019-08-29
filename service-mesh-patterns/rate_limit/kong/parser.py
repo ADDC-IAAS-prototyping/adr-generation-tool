@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import pint
 
 # Create object for generation of pint measurements
@@ -27,8 +26,7 @@ class Parser(object):
 
 
     def get_ureg_unit(self, unit_passed):
-        """Returns a ureg unit type for a given key word that corresponds to a ureg type.
-        """
+        """Returns a ureg unit type for a given key word that corresponds to a ureg type"""
         for unit in ['second', 'minute', 'hour', 'day', 'month', 'year']:
             if unit == unit_passed:
                 return 1*getattr(ureg, unit)
@@ -43,7 +41,7 @@ class Parser(object):
 
 
     def edge_cases_even(self, rate_highest_unit):
-        """Edge cases if the user-defined CONFIG_INTERVAL can be divided without a rest wrt. the highest 
+        """Edge cases if the user-defined config_interval can be divided without a rest wrt. the highest 
         time unit type in the KONG plugin config. For details see formula A1-A3.
         """
         config_interval_untyped = self.convert_even_pint_measure_to_int(self.config_interval)
@@ -100,7 +98,7 @@ class Parser(object):
 
     def check_config(self, config_file):
         """Parse rate limit metrics from KONG plugin yaml and check if the configuration is compliant with 
-        user-defined configuration checks (config_interval and CONFIG_RATE). For KONG this is particularly 
+        user-defined configuration checks (config_interval and config_rate). For KONG this is particularly 
         complex because of its proprietary format for rate limit configurations.
         """
         target = ''
