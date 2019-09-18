@@ -2,6 +2,7 @@ import click
 import yaml
 import rate_limit.kong.parser as kong
 import rate_limit.istio.parser as istio
+from markdowner import Markdowner
 
 class RateLimitConfigChecker(object):
     def __init__(self, config_file):
@@ -30,10 +31,29 @@ class RateLimitConfigChecker(object):
         @click.option('--destination', default='', prompt='Enter ID of service or endpoint of destination (optional)', help='The person to greet.')
         def cli_params(interval, requestrate, destination):
             """CLI for basic configuration parameters for rate limit plugins"""
+
+            # generate ADR file with passed values
+            md = Markdowner('rate_limit_adr_0001')
+            rate_limit_configuration = {
+                'interval': interval, 
+                'requestrate': requestrate,
+                'destination': destination
+                }
+            md.generate_ADR(
+                'Rate Limit', 
+                'None', 
+                'Context for rate limiting pattern', 
+                'Prosa about the decision in the ADD', 
+                'Consequences for this rate', 
+                rate_limit_configuration
+                )
+            rate_limit_config = md.grab_config_set()
+
+            # pass configuration to parser component
             if provider == 'kong':
-                self.parsing_kong(config_file, interval, requestrate, destination)
+                self.parsing_kong(config_file, int(rate_limit_config['interval']) , int(rate_limit_config['requestrate']), rate_limit_config['destination'])
             elif provider == 'istio':
-                self.parsing_istio(config_file, interval, requestrate, destination)
+                self.parsing_istio(config_file, int(rate_limit_config['interval']) , int(rate_limit_config['requestrate']), rate_limit_config['destination'])
 
         cli_params()
 

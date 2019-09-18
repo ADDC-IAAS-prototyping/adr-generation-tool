@@ -1,6 +1,7 @@
 import click
 import rate_limit.template_check as rate_limit
 import yaml
+from markdowner import Markdowner
 
 PATH = "sources/config_template.yaml"
 
