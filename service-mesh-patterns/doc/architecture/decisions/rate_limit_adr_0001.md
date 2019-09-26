@@ -1,6 +1,6 @@
 # Rate Limit
 
-Date: 09/18/19
+Date: 09/25/19
 
 ## Status
 None
@@ -15,5 +15,5 @@ Prosa about the decision in the ADD
 Consequences for this rate
 
 ## Config Set
-{'destination': u'', 'requestrate': 99, 'interval': 60}
+{'destination': u'', 'requestrate': 75, 'interval': 90}
 
