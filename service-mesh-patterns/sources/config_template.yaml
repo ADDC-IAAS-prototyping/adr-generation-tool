@@ -22,3 +22,6 @@ plugins:
     #redis_password: string                  # optional
     #redis_timeout: {number | 2000}          # optional
     #redis_database: {default: 0}            # optional
+---
+plugins:
+  name: jiejif

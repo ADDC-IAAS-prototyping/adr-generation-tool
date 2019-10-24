@@ -17,8 +17,8 @@ spec:
       # of the source.
       - dimensions:
           destination: reviews
-        maxAmount: 1
-        validDuration: 5s
+        maxAmount: 75
+        validDuration: 90s
       # The following override applies to 'productpage' when
       # the source is a specific ip address.
       - dimensions:

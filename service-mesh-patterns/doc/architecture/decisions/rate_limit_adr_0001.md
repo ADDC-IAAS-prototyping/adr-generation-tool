@@ -15,5 +15,5 @@ Prosa about the decision in the ADD
 Consequences for this rate
 
 ## Config Set
-{'destination': u'', 'requestrate': 75, 'interval': 90}
+{"destination": "reviews", "requestrate": 75, "interval": "900s"}
 
