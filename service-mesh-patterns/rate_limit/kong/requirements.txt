@@ -49,7 +49,7 @@ s3transfer==0.2.0
 serverlessrepo==0.1.8
 six==1.11.0
 tzlocal==1.5.1
-urllib3==1.24.1
+urllib3==1.24.2
 websocket-client==0.55.0
 Werkzeug==0.14.1
 whichcraft==0.5.2
