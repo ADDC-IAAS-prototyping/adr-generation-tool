@@ -44,7 +44,7 @@ pywin32==224
 PyYAML==3.13
 regex==2019.3.12
 requests==2.20.1
-rsa==3.4.2
+rsa==4.7
 s3transfer==0.2.0
 serverlessrepo==0.1.8
 six==1.11.0
