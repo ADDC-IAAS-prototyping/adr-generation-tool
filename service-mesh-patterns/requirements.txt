@@ -74,6 +74,6 @@ s3transfer==0.2.0
 scipy==0.13.0b1
 six==1.12.0
 soupsieve==1.9.3
-urllib3==1.24
+urllib3==1.26.5
 vboxapi==1.0
 xattr==0.6.4
