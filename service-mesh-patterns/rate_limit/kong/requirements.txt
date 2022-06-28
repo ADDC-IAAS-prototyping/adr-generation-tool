@@ -1,5 +1,5 @@
 aniso8601==6.0.0
-arrow==0.13.1
+arrow==0.15.1
 astroid==1.6.5
 aws-lambda-builders==0.2.0
 aws-sam-cli==0.13.0
